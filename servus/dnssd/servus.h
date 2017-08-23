@@ -308,19 +308,22 @@ private:
     static void resolveCBS_(DNSServiceRef, DNSServiceFlags,
                             uint32_t /*interfaceIdx*/,
                             DNSServiceErrorType error, const char* /*name*/,
-                            const char* host, uint16_t /*port*/,
-                            uint16_t txtLen, const unsigned char* txt,
-                            Servus* servus)
+                            const char* host, uint16_t port, uint16_t txtLen,
+                            const unsigned char* txt, Servus* servus)
     {
         if (error == kDNSServiceErr_NoError)
-            servus->resolveCB_(host, txtLen, txt);
+            servus->resolveCB_(host, txtLen, txt, port);
         servus->_result = error;
     }
 
-    void resolveCB_(const char* host, uint16_t txtLen, const unsigned char* txt)
+    void resolveCB_(const char* host, uint16_t txtLen, const unsigned char* txt,
+                    uint16_t port)
     {
         detail::ValueMap& values = _instanceMap[_browsedName];
         values["servus_host"] = host;
+        // Port is provided in network order, convert to host order.
+        const uint16_t host_order_port = ntohs(port);
+        values["servus_port"] = std::to_string(host_order_port);
 
         char key[256] = {0};
         const char* value = 0;
